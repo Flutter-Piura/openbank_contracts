@@ -1,0 +1,14 @@
+apis:
+  openbank@v1:
+    root: ./openapi/openapi.yaml
+
+extends:
+  - recommended-strict
+
+rules:
+  no-unused-components: error
+  operation-4xx-response: error
+  operation-operationId: error
+  operation-summary: error
+  security-defined: error
+  tag-description: error

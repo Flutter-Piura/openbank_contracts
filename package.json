@@ -1,0 +1,20 @@
+{
+  "name": "@flutter-piura/openbank-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAPI contracts for the educational OpenBank platform",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "lint": "redocly lint openbank@v1",
+    "bundle": "redocly bundle openbank@v1 --output dist/openapi.yaml",
+    "generate:dart": "openapi-generator-cli generate --generator-key dart-client",
+    "test": "npm run lint && npm run bundle && npm run generate:dart"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "2.41.0",
+    "@redocly/cli": "2.49.0"
+  }
+}

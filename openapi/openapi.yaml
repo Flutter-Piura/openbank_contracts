@@ -1,0 +1,721 @@
+openapi: 3.0.3
+info:
+  title: OpenBank API
+  version: 0.1.0
+  description: |
+    API educativa para identidades, cuentas, movimientos y transferencias
+    completamente ficticias. No procesa dinero ni información bancaria real.
+  contact:
+    name: Flutter Piura
+    url: https://github.com/Flutter-Piura
+  license:
+    name: MIT
+    url: https://opensource.org/license/mit
+servers:
+  - url: http://127.0.0.1:3000
+    description: API local
+  - url: http://127.0.0.1:4566
+    description: Sandbox local MobileLab
+tags:
+  - name: Authentication
+    description: Sesiones ficticias para desarrollo y demostración.
+  - name: Profile
+    description: Perfil del cliente autenticado.
+  - name: Accounts
+    description: Cuentas y saldos ficticios.
+  - name: Transactions
+    description: Movimientos inmutables visibles para el cliente.
+  - name: Transfers
+    description: Transferencias internas simuladas e idempotentes.
+  - name: System
+    description: Estado operativo de la API.
+security:
+  - bearerAuth: []
+paths:
+  /v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Iniciar una sesión ficticia
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              demo:
+                value:
+                  email: demo@openbank.local
+                  password: OpenBankDemo!2026
+      responses:
+        '200':
+          description: Sesión creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Renovar una sesión ficticia
+      operationId: refreshSession
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Sesión renovada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Cerrar la sesión actual
+      operationId: logout
+      responses:
+        '204':
+          description: Sesión cerrada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/me:
+    get:
+      tags: [Profile]
+      summary: Consultar el perfil autenticado
+      operationId: getCurrentCustomer
+      responses:
+        '200':
+          description: Perfil ficticio del cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/accounts:
+    get:
+      tags: [Accounts]
+      summary: Listar las cuentas del cliente
+      operationId: listAccounts
+      responses:
+        '200':
+          description: Cuentas ficticias visibles para el cliente.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/accounts/{accountId}:
+    parameters:
+      - $ref: '#/components/parameters/AccountId'
+    get:
+      tags: [Accounts]
+      summary: Consultar una cuenta
+      operationId: getAccount
+      responses:
+        '200':
+          description: Detalle de la cuenta ficticia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/accounts/{accountId}/transactions:
+    parameters:
+      - $ref: '#/components/parameters/AccountId'
+    get:
+      tags: [Transactions]
+      summary: Listar movimientos de una cuenta
+      operationId: listAccountTransactions
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageLimit'
+      responses:
+        '200':
+          description: Página de movimientos ordenada del más reciente al más antiguo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/transactions/{transactionId}:
+    parameters:
+      - $ref: '#/components/parameters/TransactionId'
+    get:
+      tags: [Transactions]
+      summary: Consultar un movimiento
+      operationId: getTransaction
+      responses:
+        '200':
+          description: Detalle del movimiento ficticio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/transfers:
+    post:
+      tags: [Transfers]
+      summary: Crear una transferencia interna
+      operationId: createTransfer
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransferRequest'
+            examples:
+              soles:
+                value:
+                  sourceAccountId: 1b27fb57-13d2-4931-861c-c903f7e44c5f
+                  destinationAccountId: 93ed95bf-37e0-4119-809f-23b30153017d
+                  amount:
+                    minorUnits: 10000
+                    currency: PEN
+                  reference: Ahorro mensual
+      responses:
+        '201':
+          description: Transferencia creada o resultado idempotente recuperado.
+          headers:
+            Location:
+              description: URL del recurso creado.
+              schema:
+                type: string
+                example: /v1/transfers/a88ee2f2-27b8-43a0-b6c4-3d846e724983
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/transfers/{transferId}:
+    parameters:
+      - $ref: '#/components/parameters/TransferId'
+    get:
+      tags: [Transfers]
+      summary: Consultar una transferencia
+      operationId: getTransfer
+      responses:
+        '200':
+          description: Estado actual de la transferencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /health:
+    get:
+      tags: [System]
+      summary: Consultar el estado de la API
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Servicio disponible.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token ficticio o token emitido por OpenBank API.
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      description: Identificador opaco de la cuenta.
+      schema:
+        type: string
+        format: uuid
+      example: 1b27fb57-13d2-4931-861c-c903f7e44c5f
+    TransactionId:
+      name: transactionId
+      in: path
+      required: true
+      description: Identificador opaco del movimiento.
+      schema:
+        type: string
+        format: uuid
+      example: c3bf7c60-432a-4245-952e-c303553542c4
+    TransferId:
+      name: transferId
+      in: path
+      required: true
+      description: Identificador opaco de la transferencia.
+      schema:
+        type: string
+        format: uuid
+      example: a88ee2f2-27b8-43a0-b6c4-3d846e724983
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Clave única por intención de transferencia; su reutilización devuelve el resultado original.
+      schema:
+        type: string
+        format: uuid
+      example: b7cb1e16-562d-4743-9427-b508931e3d22
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Cursor opaco recibido en la página anterior.
+      schema:
+        type: string
+        maxLength: 512
+    PageLimit:
+      name: limit
+      in: query
+      required: false
+      description: Cantidad máxima de movimientos por página.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Solicitud inválida.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            code: validation_error
+            message: La solicitud contiene valores inválidos.
+            correlationId: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+            details:
+              field: amount.minorUnits
+    Unauthorized:
+      description: Sesión ausente, inválida o expirada.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            code: unauthorized
+            message: La sesión no es válida.
+            correlationId: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+    NotFound:
+      description: Recurso inexistente o no visible para el cliente.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            code: resource_not_found
+            message: No se encontró el recurso solicitado.
+            correlationId: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+    Conflict:
+      description: Conflicto de estado o de idempotencia.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            code: idempotency_conflict
+            message: La clave de idempotencia fue usada con otra solicitud.
+            correlationId: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+    UnprocessableEntity:
+      description: La solicitud es válida pero incumple una regla del dominio.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            code: insufficient_funds
+            message: La cuenta no tiene saldo disponible suficiente.
+            correlationId: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+    TooManyRequests:
+      description: Se superó temporalmente el límite de solicitudes.
+      headers:
+        Retry-After:
+          description: Segundos sugeridos antes de reintentar.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 30
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            code: rate_limit_exceeded
+            message: Intenta nuevamente más tarde.
+            correlationId: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+    InternalServerError:
+      description: Error interno sin detalles sensibles.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            code: internal_error
+            message: No pudimos completar la solicitud.
+            correlationId: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+  schemas:
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: demo@openbank.local
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          format: password
+          writeOnly: true
+          example: OpenBankDemo!2026
+    RefreshRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          minLength: 16
+          maxLength: 4096
+          writeOnly: true
+          example: demo-refresh-token-not-for-production
+    AuthSession:
+      type: object
+      additionalProperties: false
+      required: [accessToken, refreshToken, tokenType, expiresInSeconds]
+      properties:
+        accessToken:
+          type: string
+          minLength: 16
+          readOnly: true
+          example: demo-access-token-not-for-production
+        refreshToken:
+          type: string
+          minLength: 16
+          readOnly: true
+          example: demo-refresh-token-not-for-production
+        tokenType:
+          type: string
+          enum: [Bearer]
+          example: Bearer
+        expiresInSeconds:
+          type: integer
+          format: int32
+          minimum: 60
+          example: 900
+    Customer:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, email]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4a004784-e2ba-4892-986d-ce8cc3761c7e
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Cliente Demo
+        email:
+          type: string
+          format: email
+          example: demo@openbank.local
+    Money:
+      type: object
+      additionalProperties: false
+      required: [minorUnits, currency]
+      properties:
+        minorUnits:
+          type: integer
+          format: int64
+          description: Importe exacto en la unidad menor de la moneda; nunca punto flotante.
+          example: 125050
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Código de moneda ISO 4217.
+          example: PEN
+    AccountSummary:
+      type: object
+      additionalProperties: false
+      required: [id, alias, maskedNumber, status, availableBalance]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 1b27fb57-13d2-4931-861c-c903f7e44c5f
+        alias:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: Cuenta principal
+        maskedNumber:
+          type: string
+          pattern: '^\*{4}[0-9]{4}$'
+          example: '****4821'
+        status:
+          type: string
+          description: 'Valores conocidos inicialmente: active, blocked, closed.'
+          example: active
+        availableBalance:
+          $ref: '#/components/schemas/Money'
+    Account:
+      allOf:
+        - $ref: '#/components/schemas/AccountSummary'
+        - type: object
+          additionalProperties: false
+          required: [createdAt]
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+              example: '2026-01-15T14:30:00Z'
+    Transaction:
+      type: object
+      additionalProperties: false
+      required: [id, accountId, type, description, amount, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: c3bf7c60-432a-4245-952e-c303553542c4
+        accountId:
+          type: string
+          format: uuid
+          example: 1b27fb57-13d2-4931-861c-c903f7e44c5f
+        transferId:
+          type: string
+          format: uuid
+          nullable: true
+          example: a88ee2f2-27b8-43a0-b6c4-3d846e724983
+        type:
+          type: string
+          description: Valores conocidos incluyen transfer_debit, transfer_credit y deposit.
+          example: transfer_debit
+        description:
+          type: string
+          minLength: 1
+          maxLength: 160
+          example: Transferencia a cuenta de ahorro
+        amount:
+          allOf:
+            - $ref: '#/components/schemas/Money'
+          description: Positivo para crédito y negativo para débito.
+        occurredAt:
+          type: string
+          format: date-time
+          example: '2026-08-30T20:15:00Z'
+    Pagination:
+      type: object
+      additionalProperties: false
+      required: [nextCursor]
+      properties:
+        nextCursor:
+          type: string
+          maxLength: 512
+          nullable: true
+          description: Nulo cuando no existe otra página.
+          example: eyJvZmZzZXQiOjIwfQ
+    TransactionPage:
+      type: object
+      additionalProperties: false
+      required: [items, pagination]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    CreateTransferRequest:
+      type: object
+      additionalProperties: false
+      required: [sourceAccountId, destinationAccountId, amount]
+      properties:
+        sourceAccountId:
+          type: string
+          format: uuid
+          example: 1b27fb57-13d2-4931-861c-c903f7e44c5f
+        destinationAccountId:
+          type: string
+          format: uuid
+          example: 93ed95bf-37e0-4119-809f-23b30153017d
+        amount:
+          allOf:
+            - $ref: '#/components/schemas/Money'
+          description: Debe tener minorUnits mayor que cero.
+        reference:
+          type: string
+          maxLength: 80
+          example: Ahorro mensual
+    Transfer:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - sourceAccountId
+        - destinationAccountId
+        - amount
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: a88ee2f2-27b8-43a0-b6c4-3d846e724983
+        sourceAccountId:
+          type: string
+          format: uuid
+          example: 1b27fb57-13d2-4931-861c-c903f7e44c5f
+        destinationAccountId:
+          type: string
+          format: uuid
+          example: 93ed95bf-37e0-4119-809f-23b30153017d
+        amount:
+          $ref: '#/components/schemas/Money'
+        reference:
+          type: string
+          maxLength: 80
+          nullable: true
+          example: Ahorro mensual
+        status:
+          type: string
+          description: 'Valores conocidos inicialmente: pending, completed, rejected, failed.'
+          example: completed
+        rejectionCode:
+          type: string
+          nullable: true
+          description: Código estable cuando la transferencia es rechazada.
+          example: insufficient_funds
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-08-30T20:15:00Z'
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-08-30T20:15:01Z'
+    ProblemDetails:
+      type: object
+      additionalProperties: false
+      required: [code, message, correlationId]
+      properties:
+        code:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*$'
+          example: validation_error
+        message:
+          type: string
+          minLength: 1
+          maxLength: 240
+          example: La solicitud contiene valores inválidos.
+        correlationId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          example: 01J6KVQZEF6SVPZJMWB2X7PZ9F
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-08-30T20:15:00Z'
