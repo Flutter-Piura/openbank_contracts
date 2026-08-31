@@ -1,0 +1,36 @@
+name: Propuesta o defecto
+description: Reporta un problema o propone un cambio de contrato.
+title: "[Contract]: "
+labels: [triage]
+body:
+  - type: markdown
+    attributes:
+      value: Usa únicamente ejemplos ficticios.
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tipo
+      options: [Defecto, Cambio compatible, Cambio incompatible, Documentación]
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Caso de uso
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Impacto y compatibilidad
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificación
+      options:
+        - label: Confirmo que no incluí secretos ni datos reales.
+          required: true
+        - label: Revisé contratos e issues existentes.
+          required: true
